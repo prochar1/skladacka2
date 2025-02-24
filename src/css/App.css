@@ -1,0 +1,246 @@
+:root {
+    --black: #404041;
+    --white: #f3f3f4;
+    --silver: #dedee0;
+    --gray: #8c8d90;
+    --graylight: #b9babd;
+}
+
+::-webkit-scrollbar {
+    width: 20px; /* šířka scrollbaru */
+}
+
+/* Styly pro track (plocha okolo thumb) */
+::-webkit-scrollbar-track {
+    background: var(--white); /* barva pozadí tracku */
+}
+
+/* Styly pro thumb (ta "posuvka" uvnitř scrollbaru) */
+::-webkit-scrollbar-thumb {
+    background: var(--black); /* barva thumbu */
+}
+
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment {
+    display: none;
+}
+
+/* Skryjeme šipky na horizontálním scrollbaru */
+::-webkit-scrollbar-button:single-button {
+    display: none;
+}
+
+html {
+    background: white;
+}
+body,
+html {
+    /* cursor: none; */
+    width: 1080px;
+    height: 1920px;
+    position: absolute;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    /* overflow: hidden; */
+    color: var(--black);
+    font-size: 18px;
+    line-height: 1.25em;
+    font-family: "Whyte";
+}
+
+* {
+    outline: none;
+    user-select: none;
+}
+
+@media screen and (max-width: 1080px) {
+    * {
+        cursor: none;
+    }
+    body,
+    html {
+        overflow: hidden;
+    }
+}
+
+body {
+    background: #f6f6f6;
+}
+
+a {
+    text-decoration: none;
+    color: var(--black);
+}
+
+section {
+    padding: 0 60px;
+    box-sizing: border-box;
+    position: relative;
+    font-size: 1.125rem;
+}
+
+main section * {
+    opacity: 1;
+}
+
+main.hidden section * {
+    opacity: 0;
+}
+
+#iframe {
+    width: 960px;
+    height: calc(1490px - 60px);
+    border: none;
+}
+
+p {
+    font-size: 1em;
+    line-height: 1.25em;
+}
+
+ul.list,
+ul.list li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.more_text {
+    padding-right: 60px;
+    font-weight: bold;
+    max-height: 0;
+    transition: all 2s linear;
+    overflow: hidden;
+}
+
+.more_text.active {
+    max-height: 100%;
+    /* overflow-y: auto; */
+}
+
+.description {
+    background: white;
+    padding: 40px;
+    font-weight: bold;
+    text-align: left;
+    max-height: 1100px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.description > div > :first-child {
+    padding-top: 0;
+    margin-top: 0;
+}
+
+.description > div > :last-child {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.description-popup {
+    z-index: 1;
+    /* padding-right: 100px; */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.96);
+    max-height: 100%;
+    z-index: 99999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.description-popup-os {
+    top: auto;
+    bottom: 0;
+    max-height: 0;
+    align-items: flex-start;
+    transition: all 0.5s linear;
+    padding: 0;
+}
+
+.description-popup-os.active {
+    max-height: 50%;
+}
+
+.description-popup-inner {
+    max-width: 600px;
+    max-height: 1000px;
+    padding: 60px;
+    overflow: hidden;
+    overflow-y: auto;
+    background: var(--white);
+}
+
+.description-popup-os .description-popup-inner {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100% - 60px - 60px - 60px - 40px - 40px - 40px);
+    margin: 40px;
+    margin-top: 140px;
+}
+
+.description-popup-inverse {
+    background: var(--black);
+    color: var(--white);
+}
+
+.description-popup .icon {
+    position: absolute;
+    right: 60px;
+    bottom: 60px;
+    width: 100px;
+    height: auto;
+}
+
+.description-popup-os .icon {
+    bottom: auto;
+    top: 40px;
+    right: 40px;
+    height: 60px;
+    width: 60px;
+}
+
+.open-description-popup {
+    position: absolute;
+}
+
+.description-absolute {
+    height: 960px;
+    position: absolute;
+    top: 0;
+}
+
+.description-fullwidth {
+    width: 100%;
+}
+
+.description-bottom {
+    bottom: 45px;
+    top: auto;
+}
+
+ol {
+    list-style-type: none;
+    counter-reset: cislovan-seznam;
+    padding-left: 0;
+}
+
+ol li {
+    counter-increment: cislovan-seznam;
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 10px;
+}
+
+ol li::before {
+    content: counter(cislovan-seznam);
+    position: absolute;
+    left: 0;
+}
