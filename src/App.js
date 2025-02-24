@@ -14,128 +14,18 @@ const snapTolerance = 50; // tolerance v pixelech pro přichycování dílků
 function generatePieces() {
   const pieces = [];
   let id = 0;
-  // Vytvoříme mřížku, kde budeme značit již obsazené buňky
-  const used = Array.from({ length: gridSize }, () =>
-    Array(gridSize).fill(false)
-  );
-
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
-      if (used[row][col]) continue;
-      let piece = null;
-      // zjistíme, jestli lze vytvořit domino horizontálně či vertikálně
-      const canHorizontal = col < gridSize - 1 && !used[row][col + 1];
-      const canVertical = row < gridSize - 1 && !used[row + 1][col];
-
-      // Pokud je oba směry volné, náhodně vybereme mezi čtvercem, horizontálním či svislým obdélníkem
-      if (canHorizontal && canVertical) {
-        const rnd = Math.random();
-        if (rnd < 0.33) {
-          // Čtvercový dílek – pokrývá 1 buňku
-          piece = {
-            id: id++,
-            shape: 'square',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth, height: cellHeight },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-        } else if (rnd < 0.66) {
-          // Horizontální obdélník – pokrývá dvě sousední buňky v řadě
-          piece = {
-            id: id++,
-            shape: 'horizontal',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth * 2, height: cellHeight },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-          used[row][col + 1] = true;
-        } else {
-          // Svislý obdélník – pokrývá dvě sousední buňky ve sloupci
-          piece = {
-            id: id++,
-            shape: 'vertical',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth, height: cellHeight * 2 },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-          used[row + 1][col] = true;
-        }
-      } else if (canHorizontal) {
-        // Pokud lze jen horizontálně, 50/50 šance
-        if (Math.random() < 0.5) {
-          piece = {
-            id: id++,
-            shape: 'horizontal',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth * 2, height: cellHeight },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-          used[row][col + 1] = true;
-        } else {
-          piece = {
-            id: id++,
-            shape: 'square',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth, height: cellHeight },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-        }
-      } else if (canVertical) {
-        // Pokud lze jen vertikálně, 50/50 šance
-        if (Math.random() < 0.5) {
-          piece = {
-            id: id++,
-            shape: 'vertical',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth, height: cellHeight * 2 },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-          used[row + 1][col] = true;
-        } else {
-          piece = {
-            id: id++,
-            shape: 'square',
-            cell: { row, col },
-            correctPos: { x: col * cellWidth, y: row * cellHeight },
-            size: { width: cellWidth, height: cellHeight },
-            currentPos: { x: col * cellWidth, y: row * cellHeight },
-            snapped: false,
-            dragOffset: null,
-          };
-        }
-      } else {
-        // Jinak jen čtverec
-        piece = {
-          id: id++,
-          shape: 'square',
-          cell: { row, col },
-          correctPos: { x: col * cellWidth, y: row * cellHeight },
-          size: { width: cellWidth, height: cellHeight },
-          currentPos: { x: col * cellWidth, y: row * cellHeight },
-          snapped: false,
-          dragOffset: null,
-        };
-      }
-      pieces.push(piece);
-      used[row][col] = true;
+      pieces.push({
+        id: id++,
+        shape: 'square',
+        cell: { row, col },
+        correctPos: { x: col * cellWidth, y: row * cellHeight },
+        size: { width: cellWidth, height: cellHeight },
+        currentPos: { x: col * cellWidth, y: row * cellHeight },
+        snapped: false,
+        dragOffset: null,
+      });
     }
   }
   return pieces;
@@ -204,11 +94,18 @@ function App() {
     return () => clearInterval(timerRef.current);
   }, [gamePhase]);
 
+  // Úprava vyhodnocení výhry – hra je kompletní, pokud jsou všechny dílky
+  // nasnapnuté a umístěné do své původní buňky.
   useEffect(() => {
     if (
       gamePhase === 'playing' &&
       pieces.length > 0 &&
-      pieces.every((p) => p.snapped)
+      pieces.every(
+        (p) =>
+          p.snapped &&
+          p.currentPos.x === p.correctPos.x &&
+          p.currentPos.y === p.correctPos.y
+      )
     ) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -242,6 +139,8 @@ function App() {
         p.id === id
           ? {
               ...p,
+              // Uvolníme dílek, aby bylo možno jej znovu umístit
+              snapped: false,
               dragOffset: {
                 x: clientX - (offsetX + p.currentPos.x),
                 y: clientY - (offsetY + p.currentPos.y),
@@ -285,27 +184,52 @@ function App() {
     setPieces((prev) =>
       prev.map((p) => {
         if (p.id === id && !p.snapped) {
-          const dx = p.currentPos.x - p.correctPos.x;
-          const dy = p.currentPos.y - p.correctPos.y;
-          if (Math.sqrt(dx * dx + dy * dy) < snapTolerance) {
-            return {
-              ...p,
-              currentPos: { ...p.correctPos },
-              snapped: true,
-              dragOffset: null,
-              error: false,
-              instantSnap: true,
-            };
-          } else {
-            return {
-              ...p,
-              dragOffset: null,
-              error: true,
-              instantSnap: true,
-            };
+          // const offsetX = (window.innerWidth - config.width) / 2;
+          // const offsetY = (window.innerHeight - config.height) / 2;
+          // Spočítáme cílovou buňku na mřížce z aktuální pozice dílku
+          let col = Math.round(p.currentPos.x / cellWidth);
+          let row = Math.round(p.currentPos.y / cellHeight);
+          // Zajistíme, že sloupec/řada spadá do platného rozsahu
+          col = Math.max(0, Math.min(col, gridSize - 1));
+          row = Math.max(0, Math.min(row, gridSize - 1));
+          const snappedPos = { x: col * cellWidth, y: row * cellHeight };
+
+          // Vypočítáme rozdíly mezi aktuální a snapovanou pozicí
+          const diffX = Math.abs(p.currentPos.x - snappedPos.x);
+          const diffY = Math.abs(p.currentPos.y - snappedPos.y);
+
+          // Pokud je dílek dost blízko, dle snapTolerance, zkusíme ho nasnapovat.
+          if (diffX <= snapTolerance && diffY <= snapTolerance) {
+            // Zjistíme, zda jsou v cílové buňce již nějaký dílek
+            const cellOccupied = prev.some(
+              (other) =>
+                other.id !== id &&
+                other.snapped &&
+                other.currentPos.x === snappedPos.x &&
+                other.currentPos.y === snappedPos.y
+            );
+            if (!cellOccupied) {
+              return {
+                ...p,
+                currentPos: snappedPos,
+                snapped: true,
+                dragOffset: null,
+                error: false,
+                instantSnap: true,
+              };
+            } else {
+              return {
+                ...p,
+                dragOffset: null,
+                error: true,
+                instantSnap: true,
+              };
+            }
           }
+          // Pokud dílek není v toleranci, ukončíme drag a necháme aktuální pozici.
+          return { ...p, dragOffset: null };
         }
-        return { ...p, dragOffset: null };
+        return p;
       })
     );
 
@@ -371,7 +295,7 @@ function App() {
               margin: '0 auto',
               backgroundImage: `url(${IMAGE_URL})`,
               backgroundSize: 'cover',
-              opacity: 0.1,
+              opacity: 0,
             }}
           />
           {pieces
