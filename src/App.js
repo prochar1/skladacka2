@@ -14,11 +14,13 @@ const snapTolerance = 50; // tolerance v pixelech pro přichycování dílků
 function generatePieces() {
   const pieces = [];
   let id = 0;
+  // Vygenerujeme pouze správné dílky
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
       pieces.push({
         id: id++,
         shape: 'square',
+        isConfusion: false,
         cell: { row, col },
         correctPos: { x: col * cellWidth, y: row * cellHeight },
         size: { width: cellWidth, height: cellHeight },
@@ -29,6 +31,44 @@ function generatePieces() {
     }
   }
   return pieces;
+}
+
+function generateConfusionPieces(startId, initialPos = null) {
+  const confusionPieces = [];
+  const numConfusionPieces = config.numConfusionPieces || 5; // počet extra dílků – dle potřeby
+  for (let i = 0; i < numConfusionPieces; i++) {
+    // Pro výpočet cílové scatter pozice použijeme stejné hodnoty jako níže
+    const offsetX = (window.innerWidth - config.width) / 2;
+    const offsetY = (window.innerHeight - config.height) / 2;
+    const scatterMinX = -offsetX;
+    const scatterMinY = -offsetY;
+    const scatterMaxX = config.width + offsetX;
+    const scatterMaxY = config.height + offsetY;
+    const targetX =
+      Math.random() * (scatterMaxX - scatterMinX - cellWidth) + scatterMinX;
+    const targetY =
+      Math.random() * (scatterMaxY - scatterMinY - cellHeight) + scatterMinY;
+    // Náhodný offset pro zobrazení části obrázku confusion
+    const confusionOffsetX = Math.random() * (config.width - cellWidth);
+    const confusionOffsetY = Math.random() * (config.height - cellHeight);
+
+    confusionPieces.push({
+      id: startId++,
+      shape: 'square',
+      isConfusion: true,
+      // Nemají reálnou cílovou pozici
+      correctPos: { x: -999, y: -999 },
+      size: { width: cellWidth, height: cellHeight },
+      // Pokud byl předán initialPos, použijeme jej, jinak rovnou cílovou
+      currentPos: initialPos || { x: targetX, y: targetY },
+      snapped: false,
+      dragOffset: null,
+      confusionOffset: { x: confusionOffsetX, y: confusionOffsetY },
+      // Uložíme cílovou pozici pro pozdější animaci
+      targetPos: { x: targetX, y: targetY },
+    });
+  }
+  return confusionPieces;
 }
 
 function App() {
@@ -58,21 +98,43 @@ function App() {
       const scatterMinY = -offsetY;
       const scatterMaxX = config.width + offsetX;
       const scatterMaxY = config.height + offsetY;
+      // Nejprve rozházíme správné dílky
+      setPieces((prev) =>
+        prev.map((p) =>
+          p.isConfusion
+            ? p // confusion dílky zatím nedotýkáme
+            : {
+                ...p,
+                currentPos: {
+                  x:
+                    Math.random() * (scatterMaxX - scatterMinX - p.size.width) +
+                    scatterMinX,
+                  y:
+                    Math.random() *
+                      (scatterMaxY - scatterMinY - p.size.height) +
+                    scatterMinY,
+                },
+              }
+        )
+      );
+      // Přidáme confusion dílky se středovou počáteční pozicí
+      const centerPos = {
+        x: config.width / 2 - cellWidth / 2,
+        y: config.height / 2 - cellHeight / 2,
+      };
+      setPieces((prev) => {
+        const startId = prev.length;
+        const confusion = generateConfusionPieces(startId, centerPos);
+        return [...prev, ...confusion];
+      });
+      // Po krátkém zpoždění aktualizujeme pozici confusion dílků na jejich targetPos
       setTimeout(() => {
         setPieces((prev) =>
-          prev.map((p) => ({
-            ...p,
-            currentPos: {
-              x:
-                Math.random() * (scatterMaxX - scatterMinX - p.size.width) +
-                scatterMinX,
-              y:
-                Math.random() * (scatterMaxY - scatterMinY - p.size.height) +
-                scatterMinY,
-            },
-          }))
+          prev.map((p) =>
+            p.isConfusion && p.targetPos ? { ...p, currentPos: p.targetPos } : p
+          )
         );
-      }, 500);
+      }, 200);
     }
   }, [gamePhase]);
 
@@ -100,12 +162,14 @@ function App() {
     if (
       gamePhase === 'playing' &&
       pieces.length > 0 &&
-      pieces.every(
-        (p) =>
-          p.snapped &&
-          p.currentPos.x === p.correctPos.x &&
-          p.currentPos.y === p.correctPos.y
-      )
+      pieces
+        .filter((p) => !p.isConfusion)
+        .every(
+          (p) =>
+            p.snapped &&
+            p.currentPos.x === p.correctPos.x &&
+            p.currentPos.y === p.correctPos.y
+        )
     ) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -334,9 +398,17 @@ function App() {
                     height: piece.size.height - config.border * 2,
                     left: 0,
                     top: 0,
-                    backgroundImage: `url(${IMAGE_URL})`,
+                    backgroundImage: `url(${
+                      piece.isConfusion
+                        ? config[
+                            `confuzingImageUrl${Math.random() < 0.5 ? 1 : 2}`
+                          ]
+                        : IMAGE_URL
+                    })`,
                     backgroundSize: `${config.width}px ${config.height}px`,
-                    backgroundPosition: `-${piece.correctPos.x}px -${piece.correctPos.y}px`,
+                    backgroundPosition: piece.isConfusion
+                      ? `-${piece.confusionOffset.x}px -${piece.confusionOffset.y}px`
+                      : `-${piece.correctPos.x}px -${piece.correctPos.y}px`,
                     zIndex: 1,
                     boxSizing: 'border-box',
                   }}
