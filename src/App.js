@@ -10,8 +10,8 @@ const cellWidth = config.width / gridSize;
 const cellHeight = config.height / gridSize;
 const snapTolerance = 50; // tolerance v pixelech pro přichycování dílků
 
-const confuzionImageUrl =
-  config[`confuzingImageUrl${Math.random() < 0.5 ? 1 : 2}`]; // URL obrázku pro confuzion dílky
+const confuzingImageUrl =
+  config[`confuzingImageUrl${Math.random() < 0.5 ? 1 : 2}`];
 
 // Funkce, která vygeneruje dílky – směs čtvercových (monomino) a obdélníkových (domino)
 function generatePieces() {
@@ -38,49 +38,40 @@ function generatePieces() {
 
 function generateConfusionPieces(startId, initialPos = null) {
   const confusionPieces = [];
-  const numConfusionPieces = config.numConfusionPieces || 5; // počet extra dílků dle potřeby
+  const numConfusionPieces = config.numConfusionPieces || 5; // počet extra dílků – dle potřeby
   for (let i = 0; i < numConfusionPieces; i++) {
-    const targetPos = getRandomOutsidePosition(cellWidth, cellHeight);
+    // Pro výpočet cílové scatter pozice použijeme stejné hodnoty jako níže
+    const offsetX = (window.innerWidth - config.width) / 2;
+    const offsetY = (window.innerHeight - config.height) / 2;
+    const scatterMinX = -offsetX;
+    const scatterMinY = -offsetY;
+    const scatterMaxX = config.width + offsetX;
+    const scatterMaxY = config.height + offsetY;
+    const targetX =
+      Math.random() * (scatterMaxX - scatterMinX - cellWidth) + scatterMinX;
+    const targetY =
+      Math.random() * (scatterMaxY - scatterMinY - cellHeight) + scatterMinY;
+    // Náhodný offset pro zobrazení části obrázku confusion
+    const confusionOffsetX = Math.random() * (config.width - cellWidth);
+    const confusionOffsetY = Math.random() * (config.height - cellHeight);
+
     confusionPieces.push({
       id: startId++,
       shape: 'square',
       isConfusion: true,
+      // Nemají reálnou cílovou pozici
       correctPos: { x: -999, y: -999 },
       size: { width: cellWidth, height: cellHeight },
-      // Pokud je zadán initialPos, použijeme jej, jinak rovnou cílovou
-      currentPos: initialPos || targetPos,
+      // Pokud byl předán initialPos, použijeme jej, jinak rovnou cílovou
+      currentPos: initialPos || { x: targetX, y: targetY },
       snapped: false,
       dragOffset: null,
-      confusionOffset: {
-        x: Math.random() * (config.width - cellWidth),
-        y: Math.random() * (config.height - cellHeight),
-      },
-      targetPos,
+      confusionOffset: { x: confusionOffsetX, y: confusionOffsetY },
+      // Uložíme cílovou pozici pro pozdější animaci
+      targetPos: { x: targetX, y: targetY },
     });
   }
   return confusionPieces;
-}
-
-function getRandomOutsidePosition(pieceWidth, pieceHeight) {
-  const margin = 20; // volitelný okraj mimo herní plochu
-  const edges = ['top', 'bottom', 'left', 'right'];
-  const chosen = edges[Math.floor(Math.random() * edges.length)];
-  let x, y;
-  if (chosen === 'top') {
-    x = Math.random() * (config.width - pieceWidth);
-    y = -pieceHeight - margin;
-  } else if (chosen === 'bottom') {
-    x = Math.random() * (config.width - pieceWidth);
-    y = config.height + margin;
-  } else if (chosen === 'left') {
-    x = -pieceWidth - margin;
-    y = Math.random() * (config.height - pieceHeight);
-  } else {
-    // right
-    x = config.width + margin;
-    y = Math.random() * (config.height - pieceHeight);
-  }
-  return { x, y };
 }
 
 function App() {
@@ -96,7 +87,7 @@ function App() {
         // Inicializace dílků sestavených podle správných pozic
         setPieces(generatePieces());
         setGamePhase('playing');
-      }, 2000);
+      }, 1000);
       return () => clearTimeout(timeout);
     }
   }, [gamePhase]);
@@ -411,7 +402,7 @@ function App() {
                     left: 0,
                     top: 0,
                     backgroundImage: `url(${
-                      piece.isConfusion ? confuzionImageUrl : IMAGE_URL
+                      piece.isConfusion ? confuzingImageUrl : IMAGE_URL
                     })`,
                     backgroundSize: `${config.width}px ${config.height}px`,
                     backgroundPosition: piece.isConfusion
