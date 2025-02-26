@@ -9,6 +9,11 @@ body,
   overflow: hidden;
 }
 
+#preimage {
+  position: relative;
+}
+
+#preimage::before,
 #image::before {
   content: '';
   position: absolute;
@@ -18,4 +23,8 @@ body,
   height: 100%;
   box-sizing: border-box;
   border: 1px solid #444;
+}
+
+#preimage::before {
+  border-color: white;
 }
