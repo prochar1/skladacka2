@@ -87,39 +87,83 @@ function App() {
         // Inicializace dílků sestavených podle správných pozic
         setPieces(generatePieces());
         setGamePhase('playing');
-      }, 1000);
+      }, config.showImageTimeout || 2000);
       return () => clearTimeout(timeout);
     }
   }, [gamePhase]);
 
-  // Rozpustí obrázek animací – nastaví currentPos na náhodná místa.
+  // Rozpustí obrázek animací – nastaví currentPos na náhodná místa mimo herní plochu.
   useEffect(() => {
     if (gamePhase === 'playing') {
       const offsetX = (window.innerWidth - config.width) / 2;
       const offsetY = (window.innerHeight - config.height) / 2;
-      const scatterMinX = -offsetX;
-      const scatterMinY = -offsetY;
-      const scatterMaxX = config.width + offsetX;
-      const scatterMaxY = config.height + offsetY;
-      // Nejprve rozházíme správné dílky
+
+      // Funkce pro získání náhodné pozice mimo herní plochu
+      const getRandomPositionOutsideGameArea = (pieceWidth, pieceHeight) => {
+        // Minimální odstup od okraje okna
+        const margin = 20;
+
+        // Rozdělíme obrazovku na 4 oblasti kolem herní plochy
+        const area = Math.floor(Math.random() * 4); // 0-horní, 1-pravá, 2-dolní, 3-levá
+        let x, y;
+
+        // eslint-disable-next-line default-case
+        switch (area) {
+          case 0: // Horní oblast
+            x =
+              margin +
+              Math.random() * (window.innerWidth - pieceWidth - margin * 2);
+            y = margin + Math.random() * (offsetY - pieceHeight - margin);
+            break;
+          case 1: // Pravá oblast
+            x = offsetX + config.width + margin;
+            x = Math.min(
+              window.innerWidth - pieceWidth - margin,
+              x + Math.random() * (offsetX - margin * 2)
+            );
+            y =
+              margin +
+              Math.random() * (window.innerHeight - pieceHeight - margin * 2);
+            break;
+          case 2: // Dolní oblast
+            x =
+              margin +
+              Math.random() * (window.innerWidth - pieceWidth - margin * 2);
+            y = offsetY + config.height + margin;
+            y = Math.min(
+              window.innerHeight - pieceHeight - margin,
+              y + Math.random() * (offsetY - margin * 2)
+            );
+            break;
+          case 3: // Levá oblast
+            x = margin + Math.random() * (offsetX - margin * 2);
+            y =
+              margin +
+              Math.random() * (window.innerHeight - pieceHeight - margin * 2);
+            break;
+        }
+
+        return {
+          x: x - offsetX,
+          y: y - offsetY,
+        };
+      };
+
+      // Rozházíme správné dílky
       setPieces((prev) =>
         prev.map((p) =>
           p.isConfusion
             ? p // confusion dílky zatím nedotýkáme
             : {
                 ...p,
-                currentPos: {
-                  x:
-                    Math.random() * (scatterMaxX - scatterMinX - p.size.width) +
-                    scatterMinX,
-                  y:
-                    Math.random() *
-                      (scatterMaxY - scatterMinY - p.size.height) +
-                    scatterMinY,
-                },
+                currentPos: getRandomPositionOutsideGameArea(
+                  p.size.width,
+                  p.size.height
+                ),
               }
         )
       );
+
       // Přidáme confusion dílky se středovou počáteční pozicí
       const centerPos = {
         x: config.width / 2 - cellWidth / 2,
@@ -130,11 +174,20 @@ function App() {
         const confusion = generateConfusionPieces(startId, centerPos);
         return [...prev, ...confusion];
       });
-      // Po krátkém zpoždění aktualizujeme pozici confusion dílků na jejich targetPos
+
+      // Po krátkém zpoždění rozházíme i confusion dílky mimo herní plochu
       setTimeout(() => {
         setPieces((prev) =>
           prev.map((p) =>
-            p.isConfusion && p.targetPos ? { ...p, currentPos: p.targetPos } : p
+            p.isConfusion
+              ? {
+                  ...p,
+                  currentPos: getRandomPositionOutsideGameArea(
+                    p.size.width,
+                    p.size.height
+                  ),
+                }
+              : p
           )
         );
       }, 200);
