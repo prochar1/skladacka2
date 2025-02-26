@@ -101,16 +101,20 @@ function App() {
       // Funkce pro získání náhodné pozice mimo herní plochu
       const getRandomPositionOutsideGameArea = (pieceWidth, pieceHeight) => {
         const margin = 20;
-        const area = Math.floor(Math.random() * 4); // 0-horní, 1-pravá, 2-dolní, 3-levá
+        const area = Math.floor(Math.random() * 2); // 0-levá, 1-pravá
         let x, y;
 
         // eslint-disable-next-line default-case
         switch (area) {
-          case 0: // Horní oblast - nad herní plochou
-            x =
+          case 0: // Levá oblast - vlevo od herní plochy
+            x = margin;
+            x = Math.max(
+              margin,
+              Math.random() * (offsetX - margin - pieceWidth)
+            );
+            y =
               margin +
-              Math.random() * (window.innerWidth - pieceWidth - margin * 2);
-            y = margin + Math.random() * (offsetY - pieceHeight - margin);
+              Math.random() * (window.innerHeight - pieceHeight - margin * 2);
             break;
           case 1: // Pravá oblast - vpravo od herní plochy
             x = offsetX + config.width + margin;
@@ -121,30 +125,6 @@ function App() {
                   (window.innerWidth -
                     (offsetX + config.width + margin * 2) -
                     pieceWidth)
-            );
-            y =
-              margin +
-              Math.random() * (window.innerHeight - pieceHeight - margin * 2);
-            break;
-          case 2: // Dolní oblast - pod herní plochou
-            x =
-              margin +
-              Math.random() * (window.innerWidth - pieceWidth - margin * 2);
-            y = offsetY + config.height + margin;
-            y = Math.min(
-              window.innerHeight - pieceHeight - margin,
-              y +
-                Math.random() *
-                  (window.innerHeight -
-                    (offsetY + config.height + margin * 2) -
-                    pieceHeight)
-            );
-            break;
-          case 3: // Levá oblast - vlevo od herní plochy
-            x = margin;
-            x = Math.max(
-              margin,
-              Math.random() * (offsetX - margin - pieceWidth)
             );
             y =
               margin +
