@@ -80,6 +80,7 @@ function App() {
   const [timer, setTimer] = useState(TOTAL_TIME);
   const timerRef = useRef(null);
   const firstMove = useRef(false);
+  const [maxZ, setMaxZ] = useState(1);
 
   useEffect(() => {
     if (gamePhase === 'showImage') {
@@ -139,44 +140,46 @@ function App() {
       };
 
       // Rozházíme dílky, kromě náhodně vybraných, které budou správně umístěné
-      setPieces((prev) => {
-        // Získáme všechny neprázdné dílky (ne confusion)
-        const nonConfusionPieces = prev.filter((p) => !p.isConfusion);
+      // s malým zpožděním
+      setTimeout(() => {
+        setPieces((prev) => {
+          // Získáme všechny neprázdné dílky (ne confusion)
+          const nonConfusionPieces = prev.filter((p) => !p.isConfusion);
 
-        // Náhodně zamícháme dílky
-        const shuffledPieces = [...nonConfusionPieces].sort(
-          () => Math.random() - 0.5
-        );
+          // Náhodně zamícháme dílky
+          const shuffledPieces = [...nonConfusionPieces].sort(
+            () => Math.random() - 0.5
+          );
 
-        // Vybereme první numDonePieces dílků pro předvyplnění
-        const selectedPieces = shuffledPieces.slice(0, config.numDonePieces);
+          // Vybereme první numDonePieces dílků pro předvyplnění
+          const selectedPieces = shuffledPieces.slice(0, config.numDonePieces);
 
-        return prev.map((p) => {
-          if (p.isConfusion) return p;
+          return prev.map((p) => {
+            if (p.isConfusion) return p;
 
-          // Zjistíme, zda je tento dílek mezi vybranými
-          const isSelected = selectedPieces.some((sp) => sp.id === p.id);
+            // Zjistíme, zda je tento dílek mezi vybranými
+            const isSelected = selectedPieces.some((sp) => sp.id === p.id);
 
-          if (isSelected) {
-            // Pokud je dílek vybraný, umístíme ho na jeho správnou pozici
+            if (isSelected) {
+              // Pokud je dílek vybraný, umístíme ho na jeho správnou pozici
+              return {
+                ...p,
+                snapped: true,
+                currentPos: p.correctPos, // použijeme správnou pozici dílku
+              };
+            }
+
+            // Ostatní dílky rozházíme
             return {
               ...p,
-              snapped: true,
-              currentPos: p.correctPos, // použijeme správnou pozici dílku
+              currentPos: getRandomPositionOutsideGameArea(
+                p.size.width,
+                p.size.height
+              ),
             };
-          }
-
-          // Ostatní dílky rozházíme
-          return {
-            ...p,
-            currentPos: getRandomPositionOutsideGameArea(
-              p.size.width,
-              p.size.height
-            ),
-          };
+          });
         });
-      });
-
+      }, 50); // Zpoždění 50ms
       // Zbytek kódu pro confusion dílky zůstává stejný
       const centerPos = {
         x: config.width / 2 - cellWidth / 2,
@@ -267,17 +270,24 @@ function App() {
     const clientY = e.clientY || e.touches[0].clientY;
     const offsetX = (window.innerWidth - config.width) / 2;
     const offsetY = (window.innerHeight - config.height) / 2;
+
+    // Zvýšíme maxZ a nastavíme novou hodnotu i danému dílku
+    const newZ = maxZ + 1;
+    setMaxZ(newZ);
+
     setPieces((prev) =>
       prev.map((p) =>
         p.id === id
           ? {
               ...p,
-              // Uvolníme dílek, aby bylo možno jej znovu umístit
               snapped: false,
+              // Nastavíme dragOffset stejně jako dříve
               dragOffset: {
                 x: clientX - (offsetX + p.currentPos.x),
                 y: clientY - (offsetY + p.currentPos.y),
               },
+              // Při startu tažení aktualizujeme zIndex
+              zIndex: newZ,
             }
           : p
       )
@@ -317,50 +327,39 @@ function App() {
     setPieces((prev) =>
       prev.map((p) => {
         if (p.id === id && !p.snapped) {
-          // const offsetX = (window.innerWidth - config.width) / 2;
-          // const offsetY = (window.innerHeight - config.height) / 2;
-          // Spočítáme cílovou buňku na mřížce z aktuální pozice dílku
           let col = Math.round(p.currentPos.x / cellWidth);
           let row = Math.round(p.currentPos.y / cellHeight);
-          // Zajistíme, že sloupec/řada spadá do platného rozsahu
           col = Math.max(0, Math.min(col, gridSize - 1));
           row = Math.max(0, Math.min(row, gridSize - 1));
           const snappedPos = { x: col * cellWidth, y: row * cellHeight };
-
-          // Vypočítáme rozdíly mezi aktuální a snapovanou pozicí
           const diffX = Math.abs(p.currentPos.x - snappedPos.x);
           const diffY = Math.abs(p.currentPos.y - snappedPos.y);
 
-          // Pokud je dílek dost blízko, dle snapTolerance, zkusíme ho nasnapovat.
-          if (diffX <= snapTolerance && diffY <= snapTolerance) {
-            // Zjistíme, zda jsou v cílové buňce již nějaký dílek
-            const cellOccupied = prev.some(
-              (other) =>
-                other.id !== id &&
-                other.snapped &&
-                other.currentPos.x === snappedPos.x &&
-                other.currentPos.y === snappedPos.y
-            );
-            if (!cellOccupied) {
-              return {
-                ...p,
-                currentPos: snappedPos,
-                snapped: true,
-                dragOffset: null,
-                error: false,
-                instantSnap: true,
-              };
-            } else {
-              return {
-                ...p,
-                dragOffset: null,
-                error: true,
-                instantSnap: true,
-              };
-            }
+          const cellOccupied = prev.some(
+            (other) =>
+              other.id !== id &&
+              other.snapped &&
+              other.currentPos.x === snappedPos.x &&
+              other.currentPos.y === snappedPos.y
+          );
+          if (
+            diffX <= snapTolerance &&
+            diffY <= snapTolerance &&
+            !cellOccupied
+          ) {
+            // Pokud je úspěšně snapnutý, nastavíme zIndex na 0
+            return {
+              ...p,
+              currentPos: snappedPos,
+              snapped: true,
+              dragOffset: null,
+              error: false,
+              instantSnap: true,
+              zIndex: 0,
+            };
+          } else {
+            return { ...p, dragOffset: null };
           }
-          // Pokud dílek není v toleranci, ukončíme drag a necháme aktuální pozici.
-          return { ...p, dragOffset: null };
         }
         return p;
       })
@@ -386,6 +385,7 @@ function App() {
     clearInterval(timerRef.current);
     timerRef.current = null;
     setPieces([]);
+    setMaxZ(1);
   };
 
   return (
@@ -450,7 +450,8 @@ function App() {
                     piece.dragOffset || piece.instantSnap
                       ? 'none'
                       : 'left 1s ease, top 1s ease',
-                  zIndex: piece.snapped ? 0 : piece.dragOffset ? 100 : 1,
+                  // Pokud je snapnutý, používáme 0, jinak zIndex uložený v objektu, nebo default 1
+                  zIndex: piece.snapped ? 0 : piece.zIndex || 1,
                   border: `${config.border || 5}px solid black`,
                   boxSizing: 'border-box',
                 }}
