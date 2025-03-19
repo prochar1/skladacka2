@@ -10,6 +10,9 @@ const cellWidth = config.width / gridSize;
 const cellHeight = config.height / gridSize;
 const snapTolerance = 50; // tolerance v pixelech pro přichycování dílků
 
+const CIRCLE_RADIUS = 45;
+const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
 const confuzingImageUrl =
   config[`confuzingImageUrl${Math.random() < 0.5 ? 1 : 2}`];
 
@@ -286,6 +289,7 @@ function App() {
                 x: clientX - (offsetX + p.currentPos.x),
                 y: clientY - (offsetY + p.currentPos.y),
               },
+              instantSnap: true,
               // Při startu tažení aktualizujeme zIndex
               zIndex: newZ,
             }
@@ -482,14 +486,40 @@ function App() {
                 ></div>
               </div>
             ))}
-          <div
-            style={{
-              position: 'fixed',
-              top: 10,
-              right: 10,
-            }}
-          >
-            Čas: {timer}s
+          <div className="timer-container">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r={CIRCLE_RADIUS}
+                fill="none"
+                stroke="#e0e0e0"
+                strokeWidth="8"
+                className="timer-circle-background"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r={CIRCLE_RADIUS}
+                fill="none"
+                stroke="#3f51b5"
+                strokeWidth="8"
+                strokeDasharray={CIRCUMFERENCE}
+                strokeDashoffset={CIRCUMFERENCE * (timer / TOTAL_TIME)}
+                transform="rotate(-90 50 50)"
+                className="timer-circle"
+              />
+              <text
+                x="50"
+                y="55"
+                textAnchor="middle"
+                fontSize="18"
+                fill="#000"
+                className="timer-text"
+              >
+                {timer}s
+              </text>
+            </svg>
           </div>
         </div>
       )}
