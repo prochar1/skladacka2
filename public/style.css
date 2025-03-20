@@ -141,3 +141,15 @@ text.timer-text {
 .piece .green {
   background: green !important;
 }
+
+button {
+  border: none;
+  width: 100px;
+  height: 100px;
+  font-size: 0;
+  background: none;
+  background-image: url('images/repeat_button.svg');
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}

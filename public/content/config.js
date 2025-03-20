@@ -11,7 +11,7 @@ window.config = {
   confuzingImageUrl2: './content/confusing2.jpg',
   numConfusionPieces: 3,
   numDonePieces: 2,
-  successMessage: 'Gratulujeme, úspěšně jste složil obrázek!',
-  expireTimeoutMessage: 'Čas vypršel! Nepodařilo se vám složit obrázek.',
+  successMessage: 'Gratulujeme!',
+  expireTimeoutMessage: 'Čas vypršel!',
   repeatGameButton: 'Opakovat hru',
 };

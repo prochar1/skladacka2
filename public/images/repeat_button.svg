@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Vrstva_2" data-name="Vrstva 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208.32 284.3">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fefefe;
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <g id="Vrstva_1-2" data-name="Vrstva 1">
+    <polygon class="cls-1" points="0 86.55 86.55 0 92.7 6.14 16.63 82.21 208.32 82.21 208.32 90.9 16.63 90.9 92.7 166.96 86.55 173.1 0 86.55"/>
+    <polygon class="cls-1" points="208.32 197.75 121.77 111.2 115.62 117.34 191.69 193.4 0 193.4 0 202.09 191.69 202.09 115.62 278.16 121.77 284.3 208.32 197.75"/>
+  </g>
+</svg>
